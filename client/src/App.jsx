@@ -22,7 +22,7 @@ const AuthContext = createContext(null);
 export const useAuth = () => useContext(AuthContext);
 
 // Global Axios Configuration
-axios.defaults.baseURL = 'http://localhost:5001';
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || '';
 axios.interceptors.response.use(
   (res) => res,
   (err) => {
@@ -136,8 +136,8 @@ const App = () => {
         <Routes>
           <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
           <Route path="/register" element={!user ? <Register /> : <Navigate to="/" />} />
-          <Route path="/*" element={user ? <MainApp /> : <Navigate to="/login" />} />
           <Route path="/room/:roomId" element={user ? <MeetingRoom /> : <Navigate to="/login" />} />
+          <Route path="/*" element={user ? <MainApp /> : <Navigate to="/login" />} />
         </Routes>
       </Router>
     </AuthContext.Provider>

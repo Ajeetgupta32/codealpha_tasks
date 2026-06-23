@@ -38,7 +38,8 @@ const MeetingRoom = () => {
   const screenStream = useRef();
 
   useEffect(() => {
-    socketRef.current = io.connect('http://localhost:5001');
+    const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+    socketRef.current = io.connect(SOCKET_URL);
     
     // Get media
     navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {

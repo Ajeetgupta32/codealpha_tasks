@@ -2,11 +2,18 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log('MongoDB Connected...');
+    if (!process.env.MONGO_URI) {
+      console.warn('⚠️  MONGO_URI not set. Auth features will be unavailable.');
+      return;
+    }
+    await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 5000,
+    });
+    console.log('✅ MongoDB Connected...');
   } catch (err) {
-    console.error('MongoDB connection error:', err.message);
-    process.exit(1);
+    console.error('⚠️  MongoDB connection error:', err.message);
+    console.warn('⚠️  Running without database. Auth routes may fail.');
+    // Do not exit — WebSocket/Socket.io signaling still works
   }
 };
 
