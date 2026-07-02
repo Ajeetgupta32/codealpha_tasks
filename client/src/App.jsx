@@ -1,7 +1,7 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Toaster, toast } from 'react-hot-toast';
+import { Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import Login from './components/Login';
 import Register from './components/Register';
@@ -16,72 +16,20 @@ import CollaborationModule from './components/CollaborationModule';
 import FilesModule from './components/FilesModule';
 import AnalyticsModule from './components/AnalyticsModule';
 import AdminModule from './components/AdminModule';
-
-const AuthContext = createContext(null);
-
-export const useAuth = () => useContext(AuthContext);
+import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Global Axios Configuration
-axios.defaults.baseURL = import.meta.env.VITE_API_URL || '';
-axios.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    const message = err.response?.data?.error || 'Something went wrong';
-    toast.error(message);
-    if (err.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-    }
-    return Promise.reject(err);
-  }
-);
+axios.defaults.baseURL = import.meta.env.VITE_BACKEND_URL || '';
 
-const App = () => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+const AppContent = () => {
+  const { user, loading } = useAuth();
   const [showPreloader, setShowPreloader] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const res = await axios.get('/api/auth/me', {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          setUser(res.data);
-        } catch (err) {
-          localStorage.removeItem('token');
-        }
-      }
-      setLoading(false);
-    };
-    checkAuth();
-  }, []);
-
-  const login = async (email, password) => {
-    const res = await axios.post('/api/auth/login', { email, password });
-    localStorage.setItem('token', res.data.token);
-    setUser(res.data.user);
-    return res.data;
-  };
-
-  const register = async (username, email, password) => {
-    const res = await axios.post('/api/auth/register', { username, email, password });
-    localStorage.setItem('token', res.data.token);
-    setUser(res.data.user);
-    return res.data;
-  };
-
-  const logout = () => {
-    localStorage.removeItem('token');
-    setUser(null);
-  };
+  if (loading) return null; // Or a simple spinner
 
   const MainApp = () => {
     const navigate = useNavigate();
-    
     return (
       <Layout activeTab={activeTab} setActiveTab={setActiveTab}>
         <AnimatePresence mode="wait">
@@ -117,7 +65,7 @@ const App = () => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout }}>
+    <>
       <AnimatePresence mode="wait">
         {showPreloader && (
           <motion.div 
@@ -140,7 +88,15 @@ const App = () => {
           <Route path="/*" element={user ? <MainApp /> : <Navigate to="/login" />} />
         </Routes>
       </Router>
-    </AuthContext.Provider>
+    </>
+  );
+};
+
+const App = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 };
 

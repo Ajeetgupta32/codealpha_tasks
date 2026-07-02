@@ -1,6 +1,6 @@
 import React from 'react';
 import { Bell, Search, Globe, ChevronDown } from 'lucide-react';
-import { useAuth } from '../App';
+import { useAuth } from '../context/AuthContext';
 
 const Header = () => {
   const { user } = useAuth();

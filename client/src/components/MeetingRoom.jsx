@@ -3,13 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import Peer from 'simple-peer';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../App';
+import { useAuth } from '../context/AuthContext';
 import Whiteboard from './Whiteboard';
 import Chat from './Chat';
 import { 
   Mic, MicOff, Video as VideoIcon, VideoOff, 
-  ScreenShare, XCircle, Users, MessageSquare, 
-  Edit3, PhoneOff, Copy, FileUp, Languages, Zap, MoreVertical
+  ScreenShare, Users, MessageSquare, 
+  Edit3, PhoneOff, Languages, Zap, MoreVertical
 } from 'lucide-react';
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -38,51 +38,57 @@ const MeetingRoom = () => {
   const screenStream = useRef();
 
   useEffect(() => {
-    const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+    // Capture primitives to avoid object reference issues in dep array
+    const username = user?.username;
+    const userId   = user?._id || user?.id;
+
+    const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
     socketRef.current = io.connect(SOCKET_URL);
-    
+
     // Get media
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
-      userVideo.current.srcObject = stream;
-      userStream.current = stream;
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then(stream => {
+        userVideo.current.srcObject = stream;
+        userStream.current = stream;
 
-      socketRef.current.emit('join-room', { roomId, username: user.username, userId: user.id });
+        socketRef.current.emit('join-room', { roomId, username, userId });
 
-      socketRef.current.on('all-users', users => {
-        const peers = [];
-        users.forEach(otherUser => {
-          const peer = createPeer(otherUser.socketId, socketRef.current.id, stream);
-          peersRef.current.push({ peerID: otherUser.socketId, peer, username: otherUser.username });
-          peers.push({ peerID: otherUser.socketId, peer, username: otherUser.username });
+        socketRef.current.on('all-users', users => {
+          const peers = [];
+          users.forEach(otherUser => {
+            const peer = createPeer(otherUser.socketId, socketRef.current.id, stream, username);
+            peersRef.current.push({ peerID: otherUser.socketId, peer, username: otherUser.username });
+            peers.push({ peerID: otherUser.socketId, peer, username: otherUser.username });
+          });
+          setPeers(peers);
         });
-        setPeers(peers);
-      });
 
-      socketRef.current.on('user-joined', payload => {
-        const peer = addPeer(payload.signal, payload.callerID, stream);
-        peersRef.current.push({ peerID: payload.callerID, peer, username: payload.username });
-        setPeers(prev => [...prev, { peerID: payload.callerID, peer, username: payload.username }]);
-      });
+        socketRef.current.on('user-joined', payload => {
+          const peer = addPeer(payload.signal, payload.callerID, stream);
+          peersRef.current.push({ peerID: payload.callerID, peer, username: payload.username });
+          setPeers(prev => [...prev, { peerID: payload.callerID, peer, username: payload.username }]);
+        });
 
-      socketRef.current.on('receiving-returned-signal', payload => {
-        const item = peersRef.current.find(p => p.peerID === payload.id);
-        if (item) item.peer.signal(payload.signal);
-      });
+        socketRef.current.on('receiving-returned-signal', payload => {
+          const item = peersRef.current.find(p => p.peerID === payload.id);
+          if (item) item.peer.signal(payload.signal);
+        });
 
-      socketRef.current.on('user-left', id => {
-        const peerObj = peersRef.current.find(p => p.peerID === id);
-        if (peerObj) peerObj.peer.destroy();
-        const remainingPeers = peersRef.current.filter(p => p.peerID !== id);
-        peersRef.current = remainingPeers;
-        setPeers(remainingPeers);
-      });
+        socketRef.current.on('user-left', id => {
+          const peerObj = peersRef.current.find(p => p.peerID === id);
+          if (peerObj) peerObj.peer.destroy();
+          const remaining = peersRef.current.filter(p => p.peerID !== id);
+          peersRef.current = remaining;
+          setPeers(remaining);
+        });
 
-      socketRef.current.on('receive-reaction', (payload) => {
-        const id = Math.random().toString(36).substr(2, 9);
-        setReactions(prev => [...prev, { id, ...payload }]);
-        setTimeout(() => setReactions(prev => prev.filter(r => r.id !== id)), 4000);
-      });
-    });
+        socketRef.current.on('receive-reaction', (payload) => {
+          const id = Math.random().toString(36).substr(2, 9);
+          setReactions(prev => [...prev, { id, ...payload }]);
+          setTimeout(() => setReactions(prev => prev.filter(r => r.id !== id)), 4000);
+        });
+      })
+      .catch(err => console.error('Media error:', err));
 
     if (recognition) {
       recognition.continuous = true;
@@ -94,14 +100,18 @@ const MeetingRoom = () => {
     }
 
     return () => {
-      socketRef.current.disconnect();
+      socketRef.current?.disconnect();
       if (userStream.current) userStream.current.getTracks().forEach(t => t.stop());
+      if (screenStream.current) screenStream.current.getTracks().forEach(t => t.stop());
+      peersRef.current.forEach(p => p.peer?.destroy());
     };
-  }, [roomId, user]);
+  }, [roomId]); // only roomId — user data captured as primitives above
 
-  function createPeer(userToSignal, callerID, stream) {
+  function createPeer(userToSignal, callerID, stream, username) {
     const peer = new Peer({ initiator: true, trickle: false, stream });
-    peer.on('signal', signal => socketRef.current.emit('sending-signal', { userToSignal, callerID, signal, username: user.username }));
+    peer.on('signal', signal =>
+      socketRef.current.emit('sending-signal', { userToSignal, callerID, signal, username })
+    );
     return peer;
   }
 
@@ -118,21 +128,34 @@ const MeetingRoom = () => {
   const shareScreen = async () => {
     if (!screenSharing) {
       try {
-        const stream = await navigator.mediaDevices.getDisplayMedia({ cursor: true });
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, cursor: true });
         screenStream.current = stream;
-        peersRef.current.forEach(p => p.peer.replaceTrack(userStream.current.getVideoTracks()[0], stream.getVideoTracks()[0], userStream.current));
+        const screenTrack = stream.getVideoTracks()[0];
+        const camTrack    = userStream.current.getVideoTracks()[0];
+        peersRef.current.forEach(p => {
+          try { p.peer.replaceTrack(camTrack, screenTrack, userStream.current); } catch (e) {}
+        });
         userVideo.current.srcObject = stream;
-        stream.getVideoTracks()[0].onended = () => stopScreenShare();
+        screenTrack.onended = () => stopScreenShare();
         setScreenSharing(true);
-      } catch (err) { console.error(err); }
-    } else { stopScreenShare(); }
+      } catch (err) {
+        if (err.name !== 'NotAllowedError') console.error('Screen share error:', err);
+      }
+    } else {
+      stopScreenShare();
+    }
   };
 
   const stopScreenShare = () => {
-    const videoTrack = userStream.current.getVideoTracks()[0];
-    peersRef.current.forEach(p => p.peer.replaceTrack(screenStream.current.getVideoTracks()[0], videoTrack, userStream.current));
+    if (!screenStream.current) return;
+    const camTrack    = userStream.current?.getVideoTracks()[0];
+    const screenTrack = screenStream.current.getVideoTracks()[0];
+    peersRef.current.forEach(p => {
+      try { p.peer.replaceTrack(screenTrack, camTrack, userStream.current); } catch (e) {}
+    });
     userVideo.current.srcObject = userStream.current;
     screenStream.current.getTracks().forEach(t => t.stop());
+    screenStream.current = null;
     setScreenSharing(false);
   };
 
@@ -158,7 +181,7 @@ const MeetingRoom = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <div style={{ background: 'var(--primary)', padding: '8px', borderRadius: '10px' }}><Users size={18}/></div>
           <div>
-            <h3 style={{ fontSize: '1rem', fontWeight: '800' }}>Ether Live Session</h3>
+            <h3 style={{ fontSize: '1rem', fontWeight: '800' }}>RealConnect Session</h3>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Room Code: <span style={{ color: 'var(--primary)' }}>{roomId}</span></p>
           </div>
         </div>
@@ -198,7 +221,7 @@ const MeetingRoom = () => {
                     filter: videoBlur ? 'blur(15px)' : 'none'
                   }} />
                   <div className="video-label">
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: micOn ? '--accent' : '--danger' }} />
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: micOn ? 'var(--accent)' : 'var(--danger)' }} />
                     You ({user.username})
                   </div>
                   <FloatingReactions reactions={reactions} targetSocketId={socketRef.current?.id} />
@@ -283,23 +306,37 @@ const MeetingRoom = () => {
 };
 
 const VideoCard = ({ peer, username, socketId, isTalking, onTalk, reactions }) => {
-  const ref = useRef();
+  const ref        = useRef();
+  const audioCtxRef = useRef(null);
+  const rafRef      = useRef(null);
+
   useEffect(() => {
-    peer.on('stream', stream => {
-      ref.current.srcObject = stream;
-      const audioCtx = new AudioContext();
-      const analyser = audioCtx.createAnalyser();
-      const source = audioCtx.createMediaStreamSource(stream);
-      source.connect(analyser);
-      const data = new Uint8Array(analyser.frequencyBinCount);
-      const check = () => {
-        analyser.getByteFrequencyData(data);
-        const avg = data.reduce((a, b) => a + b) / data.length;
-        onTalk(avg > 12);
-        requestAnimationFrame(check);
-      };
-      check();
-    });
+    const onStream = (stream) => {
+      if (ref.current) ref.current.srcObject = stream;
+      try {
+        audioCtxRef.current = new AudioContext();
+        const analyser = audioCtxRef.current.createAnalyser();
+        const source   = audioCtxRef.current.createMediaStreamSource(stream);
+        source.connect(analyser);
+        const data = new Uint8Array(analyser.frequencyBinCount);
+        const check = () => {
+          analyser.getByteFrequencyData(data);
+          const avg = data.reduce((a, b) => a + b, 0) / data.length;
+          onTalk(avg > 12);
+          rafRef.current = requestAnimationFrame(check);
+        };
+        check();
+      } catch (err) {
+        console.warn('AudioContext unavailable:', err);
+      }
+    };
+
+    peer.on('stream', onStream);
+
+    return () => {
+      if (rafRef.current)  cancelAnimationFrame(rafRef.current);
+      if (audioCtxRef.current) audioCtxRef.current.close().catch(() => {});
+    };
   }, [peer, onTalk]);
 
   return (

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../App';
+import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import { LogIn, ArrowRight } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -15,7 +15,7 @@ const Login = () => {
     e.preventDefault();
     try {
       await login(email, password);
-      toast.success('Welcome back to Ether');
+      toast.success('Welcome back to RealConnect');
     } catch (err) {
       setError(err.response?.data?.error || 'Authentication failed');
     }
@@ -41,7 +41,7 @@ const Login = () => {
           >
             <LogIn color="white" size={32} />
           </motion.div>
-          <h2>Ether</h2>
+          <h2>RealConnect</h2>
           <p>Login to your workspace</p>
         </div>
 
@@ -66,7 +66,7 @@ const Login = () => {
               type="email" 
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
-              placeholder="name@ether.com" 
+              placeholder="name@realconnect.com" 
               required 
             />
           </div>

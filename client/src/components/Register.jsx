@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../App';
+import { useAuth } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import { UserPlus, ArrowRight } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -16,7 +16,7 @@ const Register = () => {
     e.preventDefault();
     try {
       await register(username, email, password);
-      toast.success('Your Ether workspace is ready');
+      toast.success('Your RealConnect workspace is ready');
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed');
     }
@@ -43,7 +43,7 @@ const Register = () => {
           >
             <UserPlus color="white" size={32} />
           </motion.div>
-          <h2>Join Ether</h2>
+          <h2>Join RealConnect</h2>
           <p>Create your professional identity</p>
         </div>
 
@@ -78,7 +78,7 @@ const Register = () => {
               type="email" 
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
-              placeholder="name@ether.com" 
+              placeholder="name@realconnect.com" 
               required 
             />
           </div>

@@ -4,7 +4,7 @@ import {
   User, Shield, Bell, Monitor, 
   Smartphone, CreditCard, ExternalLink, Camera
 } from 'lucide-react';
-import { useAuth } from '../App';
+import { useAuth } from '../context/AuthContext';
 
 const SettingsModule = () => {
   const { user } = useAuth();

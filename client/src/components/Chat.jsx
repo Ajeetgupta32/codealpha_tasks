@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, File, Paperclip, Download } from 'lucide-react';
-import { useAuth } from '../App';
+import { Send, File, Paperclip, Download, MessageSquare } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import CryptoJS from 'crypto-js';
 
-const Chat = ({ socket, peers, roomId }) => {
+const Chat = ({ socket, roomId }) => {
   const [messages, setMessages] = useState([]);
   const [inputMsg, setInputMsg] = useState('');
   const { user } = useAuth();
@@ -69,7 +69,7 @@ const Chat = ({ socket, peers, roomId }) => {
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div style={{ padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
         <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <MessageSquare size={20} /> Chat & Files
+          <MessageSquare size={20} /> Chat &amp; Files
         </h3>
       </div>
 
@@ -130,9 +130,5 @@ const Chat = ({ socket, peers, roomId }) => {
     </div>
   );
 };
-
-const MessageSquare = ({ size }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-);
 
 export default Chat;

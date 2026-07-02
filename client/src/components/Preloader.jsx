@@ -1,48 +1,55 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Points, PointMaterial, Float } from '@react-three/drei';
-import { Zap } from 'lucide-react';
+import { Points, PointMaterial, Float, Line, Sphere } from '@react-three/drei';
+import { Share2 } from 'lucide-react';
+import * as THREE from 'three';
 
 const messages = [
-  "Initializing Experience...",
-  "Loading Innovation...",
-  "Preparing Workspace...",
-  "Almost Ready..."
+  "Synchronizing Nodes...",
+  "establishing Secure Channels...",
+  "Optimizing Real-Time Bridge...",
+  "Welcome to RealConnect"
 ];
 
-const ParticleBackground = () => {
+const ConnectionNetwork = () => {
   const ref = useRef();
   
-  // Manual particle generation for maximum stability
+  // Create a more "connected" network of points
   const points = useMemo(() => {
-    const p = new Float32Array(5000 * 3);
-    for (let i = 0; i < 5000; i++) {
-        p[i * 3] = (Math.random() - 0.5) * 4;
-        p[i * 3 + 1] = (Math.random() - 0.5) * 4;
-        p[i * 3 + 2] = (Math.random() - 0.5) * 4;
+    const p = new Float32Array(3000 * 3);
+    for (let i = 0; i < 3000; i++) {
+        p[i * 3] = (Math.random() - 0.5) * 5;
+        p[i * 3 + 1] = (Math.random() - 0.5) * 5;
+        p[i * 3 + 2] = (Math.random() - 0.5) * 5;
     }
     return p;
   }, []);
 
   useFrame((state, delta) => {
     if (ref.current) {
-      ref.current.rotation.x -= delta * 0.1;
-      ref.current.rotation.y -= delta * 0.15;
+      ref.current.rotation.x += delta * 0.05;
+      ref.current.rotation.y += delta * 0.08;
     }
   });
 
   return (
-    <group rotation={[0, 0, Math.PI / 4]}>
+    <group>
       <Points ref={ref} positions={points} stride={3} frustumCulled={false}>
         <PointMaterial
           transparent
-          color="#6366f1"
-          size={0.005}
+          color="#3b82f6"
+          size={0.008}
           sizeAttenuation={true}
           depthWrite={false}
+          blending={THREE.AdditiveBlending}
         />
       </Points>
+      {/* Subtle pulsing core */}
+      <mesh scale={0.5}>
+        <sphereGeometry args={[1, 32, 32]} />
+        <meshBasicMaterial color="#3b82f6" transparent opacity={0.05} wireframe />
+      </mesh>
     </group>
   );
 };
@@ -56,16 +63,18 @@ const WorldClassPreloader = ({ onComplete }) => {
       setProgress(prev => {
         if (prev >= 100) {
           clearInterval(interval);
-          setTimeout(onComplete, 1000);
+          setTimeout(onComplete, 1200);
           return 100;
         }
-        return prev + 1;
+        // Quadratic easing for a more natural feel
+        const step = prev < 50 ? 1 : prev < 85 ? 0.7 : 0.4;
+        return Math.min(100, prev + step);
       });
-    }, 30);
+    }, 25);
 
     const msgInterval = setInterval(() => {
       setMsgIndex(prev => (prev + 1) % messages.length);
-    }, 1500);
+    }, 1800);
 
     return () => {
       clearInterval(interval);
@@ -74,136 +83,100 @@ const WorldClassPreloader = ({ onComplete }) => {
   }, [onComplete]);
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: '#050816', zIndex: 10000, overflow: 'hidden' }}>
-      {/* 3D Starfield Background */}
+    <div style={{ position: 'fixed', inset: 0, background: '#020617', zIndex: 10000, overflow: 'hidden' }}>
+      {/* 3D Global Connection Background */}
       <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-        <Canvas camera={{ position: [0, 0, 1] }}>
-          <ParticleBackground />
+        <Canvas camera={{ position: [0, 0, 1.5] }}>
+          <ambientLight intensity={0.5} />
+          <ConnectionNetwork />
         </Canvas>
       </div>
 
-      {/* Cinematic Overlays */}
-      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 50% 50%, transparent 0%, rgba(5, 8, 22, 0.8) 100%)', zIndex: 1 }} />
+      {/* Atmospheric Shaders & Glows */}
+      <div style={{ 
+        position: 'absolute', inset: 0, 
+        background: 'radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.05) 0%, rgba(2, 6, 23, 0.95) 100%)', 
+        zIndex: 1 
+      }} />
       
-      {/* Interactive Cursor Glow (CSS) */}
-      <InteractiveGlow />
-
       <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
         
-        {/* Animated Central Logo */}
+        {/* Central Brand Symbol */}
         <div style={{ position: 'relative' }}>
           <motion.div 
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ type: 'spring', damping: 10, stiffness: 50, duration: 1 }}
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 100 }}
             style={{ 
-              width: '120px', height: '120px', background: 'var(--primary)', 
-              borderRadius: '30px', display: 'flex', justifyContent: 'center', 
-              alignItems: 'center', boxShadow: '0 0 80px var(--primary-glow)',
+              width: '100px', height: '100px', background: 'rgba(59, 130, 246, 0.1)', 
+              borderRadius: '50%', display: 'flex', justifyContent: 'center', 
+              alignItems: 'center', border: '1px solid rgba(59, 130, 246, 0.3)',
+              boxShadow: '0 0 50px rgba(59, 130, 246, 0.2)',
               position: 'relative', zIndex: 5
             }}
           >
-            <Zap size={60} color="white" fill="white" />
+            <Share2 size={40} color="#60a5fa" />
+            
+            {/* Pulsing Aura */}
+            <motion.div 
+              animate={{ scale: [1, 1.5], opacity: [0.3, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid #3b82f6' }}
+            />
           </motion.div>
-
-          {/* Energy Rings */}
-          <motion.div 
-            animate={{ rotate: 360 }}
-            transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-            style={{ 
-              position: 'absolute', inset: '-20px', border: '2px dashed var(--primary)', 
-              borderRadius: '45px', opacity: 0.3 
-            }} 
-          />
-          <motion.div 
-            animate={{ rotate: -360 }}
-            transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
-            style={{ 
-              position: 'absolute', inset: '-40px', border: '1px solid var(--secondary)', 
-              borderRadius: '55px', opacity: 0.2 
-            }} 
-          />
         </div>
 
-        {/* Brand Text */}
-        <motion.h1 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 1 }}
-          style={{ marginTop: '40px', fontSize: '3.5rem', fontWeight: '900', letterSpacing: '-0.06em', textShadow: '0 0 20px var(--primary-glow)' }}
-        >
-          ETHER
-        </motion.h1>
-
-        {/* Dynamic Loading Message */}
-        <AnimatePresence mode="wait">
-          <motion.p 
-            key={msgIndex}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            style={{ marginTop: '15px', color: 'var(--text-muted)', fontSize: '1rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.2em' }}
+        {/* Brand Text Section */}
+        <div style={{ marginTop: '50px', textAlign: 'center' }}>
+          <motion.h1 
+            initial={{ opacity: 0, letterSpacing: '0.5em' }}
+            animate={{ opacity: 1, letterSpacing: '0.1em' }}
+            transition={{ duration: 1.5, ease: 'easeOut' }}
+            style={{ 
+              fontSize: '3.5rem', fontWeight: '900', color: '#f8fafc',
+              textTransform: 'uppercase', marginBottom: '10px'
+            }}
           >
-            {messages[msgIndex]}
-          </motion.p>
-        </AnimatePresence>
+            Real<span style={{ color: '#3b82f6' }}>Connect</span>
+          </motion.h1>
+          
+          <AnimatePresence mode="wait">
+            <motion.p 
+              key={msgIndex}
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              style={{ color: '#94a3b8', fontSize: '0.8rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.3em' }}
+            >
+              {messages[msgIndex]}
+            </motion.p>
+          </AnimatePresence>
+        </div>
 
-        {/* Progress System */}
-        <div style={{ marginTop: '60px', width: '300px', textAlign: 'center' }}>
-          <div style={{ position: 'relative', height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
+        {/* Precision Progress Bar */}
+        <div style={{ marginTop: '80px', width: '320px' }}>
+          <div style={{ height: '2px', width: '100%', background: 'rgba(255,255,255,0.03)', borderRadius: '4px', overflow: 'hidden' }}>
             <motion.div 
-              style={{ 
-                position: 'absolute', left: 0, top: 0, height: '100%', 
-                background: 'linear-gradient(to right, var(--primary), var(--secondary))',
-                width: `${progress}%`,
-                boxShadow: '0 0 20px var(--primary)'
-              }} 
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              style={{ height: '100%', background: 'linear-gradient(90deg, #3b82f6, #2dd4bf)', boxShadow: '0 0 15px #3b82f6' }}
             />
           </div>
-          <p style={{ marginTop: '15px', fontSize: '1.2rem', fontWeight: '800', fontVariantNumeric: 'tabular-nums' }}>
-            {progress}%
-          </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px' }}>
+            <span style={{ color: '#475569', fontSize: '0.7rem', fontWeight: '800' }}>ESTABLISHING LINK</span>
+            <span style={{ color: '#f8fafc', fontSize: '0.8rem', fontWeight: '900', fontVariantNumeric: 'tabular-nums' }}>{Math.floor(progress)}%</span>
+          </div>
         </div>
 
       </div>
 
-      <style>{`
-        .netflix-sweep {
-          position: absolute;
-          width: 5px;
-          height: 100vh;
-          background: var(--primary);
-          box-shadow: 0 0 100px var(--primary);
-          left: -10%;
-          animation: sweep 4s infinite linear;
-          opacity: 0.3;
-        }
-        @keyframes sweep {
-          from { left: -10%; }
-          to { left: 110%; }
-        }
-      `}</style>
-      <div className="netflix-sweep" />
-      <div className="netflix-sweep" style={{ animationDelay: '2s', background: 'var(--secondary)', boxShadow: '0 0 100px var(--secondary)' }} />
+      {/* Modern Scanline Effect */}
+      <div style={{ 
+        position: 'absolute', inset: 0, 
+        background: 'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06))', 
+        zIndex: 2, backgroundSize: '100% 4px, 3px 100%', pointerEvents: 'none', mixBlendMode: 'overlay', opacity: 0.2
+      }} />
     </div>
-  );
-};
-
-const InteractiveGlow = () => {
-  const [pos, setPos] = useState({ x: 0, y: 0 });
-  useEffect(() => {
-    const handle = (e) => setPos({ x: e.clientX, y: e.clientY });
-    window.addEventListener('mousemove', handle);
-    return () => window.removeEventListener('mousemove', handle);
-  }, []);
-
-  return (
-    <div style={{ 
-      position: 'fixed', left: pos.x, top: pos.y, 
-      width: '400px', height: '400px', 
-      background: 'radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%)',
-      transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 2
-    }} />
   );
 };
 

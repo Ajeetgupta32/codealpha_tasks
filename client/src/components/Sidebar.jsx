@@ -4,7 +4,7 @@ import {
   Home, Video, Users, FileText, Settings, 
   PieChart, Bell, LogOut, Zap, Shield, HelpCircle, ChevronRight, MessageSquare
 } from 'lucide-react';
-import { useAuth } from '../App';
+import { useAuth } from '../context/AuthContext';
 
 const Sidebar = ({ activeTab, setActiveTab, collapsed }) => {
   const { logout, user } = useAuth();
@@ -49,7 +49,7 @@ const Sidebar = ({ activeTab, setActiveTab, collapsed }) => {
             animate={{ opacity: 1 }} 
             style={{ fontSize: '1.5rem', fontWeight: '800', letterSpacing: '-0.04em' }}
           >
-            Ether
+            RealConnect
           </motion.h2>
         )}
       </div>
